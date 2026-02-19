@@ -7,21 +7,27 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
 const ADMIN_PASSWORD = 'kazepho2024';
+const STORAGE_KEY = 'kazepho_auth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  });
 
-  const login = (password: string): boolean => {
+  const login = (password: string) => {
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
+      localStorage.setItem(STORAGE_KEY, 'true');
       return true;
     }
     return false;
   };
 
-  const logout = () => setIsAuthenticated(false);
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem(STORAGE_KEY);
+  };
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
