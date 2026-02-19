@@ -1,0 +1,50 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  font-family: 'Source Serif 4', serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.kazepho {
+  color: var(--kazepho);
+  background: rgba(74, 158, 255, 0.1);
+  border-color: rgba(74, 158, 255, 0.25);
+}
+
+.respa {
+  color: var(--respa);
+  background: rgba(72, 216, 154, 0.1);
+  border-color: rgba(72, 216, 154, 0.25);
+}
+
+.izho {
+  color: var(--izho);
+  background: rgba(244, 124, 78, 0.1);
+  border-color: rgba(244, 124, 78, 0.25);
+}
+
+.grade {
+  color: var(--gold);
+  background: var(--gold-glow);
+  border-color: var(--border-strong);
+}
+
+.year {
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+}
+
+.tag {
+  color: var(--text-muted);
+  background: transparent;
+  border-color: var(--border-subtle);
+  font-size: 0.68rem;
+}
