@@ -17,6 +17,7 @@ interface FormData {
   experimentalSetup: string;
   solution: string;
   tags: string;
+  difficulty: string;
 }
 
 export default function AddProblem() {
@@ -32,6 +33,7 @@ export default function AddProblem() {
     olympiad: existing?.olympiad || 'KazEPhO',
     year: existing?.year || new Date().getFullYear(),
     gradeLevel: existing?.gradeLevel || null,
+    difficulty: existing?.difficulty || 'Medium',
     statement: existing?.statement || '',
     experimentalSetup: existing?.experimentalSetup || '',
     solution: existing?.solution || '',

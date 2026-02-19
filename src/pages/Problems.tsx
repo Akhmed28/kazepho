@@ -8,10 +8,7 @@ import ProblemCard from '../components/ui/ProblemCard';
 import styles from './Problems.module.css';
 
 const defaultFilters: FilterState = {
-  olympiad: 'All',
-  year: 'All',
-  gradeLevel: 'All',
-  search: '',
+  olympiad: 'All', year: 'All', gradeLevel: 'All', difficulty: 'All', search: '',
 };
 
 export default function Problems() {
@@ -31,6 +28,7 @@ export default function Problems() {
       if (filters.olympiad !== 'All' && p.olympiad !== filters.olympiad) return false;
       if (filters.year !== 'All' && p.year !== filters.year) return false;
       if (filters.gradeLevel !== 'All' && p.gradeLevel !== filters.gradeLevel) return false;
+      if (filters.difficulty !== 'All' && p.difficulty !== filters.difficulty) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
         return (
@@ -47,32 +45,26 @@ export default function Problems() {
     <div className={styles.page}>
       <div className="container">
         <div className={styles.header}>
-          <div>
-            <div className="gold-line" />
-            <h1 className={styles.title}>Problems Archive</h1>
-            <p className={styles.subtitle}>
-              Browse experimental physics problems from KazEPhO, Respa, and IZhO competitions.
-            </p>
-          </div>
+          <div className="gold-line" />
+          <h1 className={styles.title}>Problems Archive</h1>
+          <p className={styles.subtitle}>
+            Browse experimental physics problems from KazEPhO, Respa, and IZhO.
+          </p>
         </div>
 
         <FilterBar filters={filters} onChange={setFilters} total={filtered.length} />
 
         {filtered.length > 0 ? (
           <div className={styles.grid}>
-            {filtered.map((p, i) => (
-              <ProblemCard key={p.id} problem={p} index={i} />
-            ))}
+            {filtered.map((p, i) => <ProblemCard key={p.id} problem={p} index={i} />)}
           </div>
         ) : (
           <div className={styles.empty}>
-            <BookOpen size={40} color="var(--text-muted)" />
-            <p>No problems match your filters.</p>
-            <button
-              className={styles.resetBtn}
-              onClick={() => setFilters(defaultFilters)}
-            >
-              Clear Filters
+            <div className={styles.emptyIcon}><BookOpen size={36} /></div>
+            <h3>No problems found</h3>
+            <p>Try adjusting your filters or search term.</p>
+            <button className={styles.resetBtn} onClick={() => setFilters(defaultFilters)}>
+              Clear all filters
             </button>
           </div>
         )}
