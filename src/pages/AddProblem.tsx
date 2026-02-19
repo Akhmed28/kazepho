@@ -3,7 +3,6 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Eye, Code2, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useProblem } from '../hooks/useProblems';
-import { createProblem, updateProblem } from '../lib/supabase';
 import LatexEditor from '../components/editor/LatexEditor';
 import LatexRenderer from '../components/ui/LatexRenderer';
 import Badge from '../components/ui/Badge';
@@ -30,15 +29,9 @@ export default function AddProblem() {
   const { problem: existing } = useProblem(id);
 
   const [form, setForm] = useState<FormData>({
-    title: '',
-    olympiad: 'KazEPhO',
-    year: new Date().getFullYear(),
-    gradeLevel: null,
-    difficulty: 'Medium',
-    statement: '',
-    experimentalSetup: '',
-    solution: '',
-    tags: '',
+    title: '', olympiad: 'KazEPhO', year: new Date().getFullYear(),
+    gradeLevel: null, difficulty: 'Medium',
+    statement: '', experimentalSetup: '', solution: '', tags: '',
   });
 
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
@@ -49,15 +42,10 @@ export default function AddProblem() {
   useEffect(() => {
     if (existing) {
       setForm({
-        title: existing.title,
-        olympiad: existing.olympiad,
-        year: existing.year,
-        gradeLevel: existing.gradeLevel,
-        difficulty: existing.difficulty,
-        statement: existing.statement,
-        experimentalSetup: existing.experimentalSetup,
-        solution: existing.solution,
-        tags: (existing.tags || []).join(', '),
+        title: existing.title, olympiad: existing.olympiad, year: existing.year,
+        gradeLevel: existing.gradeLevel, difficulty: existing.difficulty,
+        statement: existing.statement, experimentalSetup: existing.experimentalSetup,
+        solution: existing.solution, tags: (existing.tags ?? []).join(', '),
       });
     }
   }, [existing]);
@@ -75,42 +63,33 @@ export default function AddProblem() {
     );
   }
 
-  const set = <K extends keyof FormData>(k: K, v: FormData[K]) =>
-    setForm(f => ({ ...f, [k]: v }));
+  const set = <K extends keyof FormData>(k: K, v: FormData[K]) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
-
     const payload = {
-      title: form.title,
-      olympiad: form.olympiad,
-      year: form.year,
-      gradeLevel: form.gradeLevel,
-      difficulty: form.difficulty,
-      statement: form.statement,
-      experimentalSetup: form.experimentalSetup,
+      title: form.title, olympiad: form.olympiad, year: form.year,
+      gradeLevel: form.gradeLevel, difficulty: form.difficulty,
+      statement: form.statement, experimentalSetup: form.experimentalSetup,
       solution: form.solution,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
     };
-
     try {
       if (isEdit && id) {
+        const { updateProblem } = await import('../lib/supabase');
         await updateProblem(id, payload);
       } else {
+        const { createProblem } = await import('../lib/supabase');
         await createProblem(payload);
       }
-      setSaved(true);
-      setTimeout(() => navigate('/problems'), 1500);
-    } catch (err) {
-      // In mock mode, just navigate
-      setSaved(true);
-      setTimeout(() => navigate('/problems'), 1500);
-      console.error(err);
-    } finally {
-      setSaving(false);
+    } catch (_e) {
+      // mock mode - continue
     }
+    setSaved(true);
+    setSaving(false);
+    setTimeout(() => navigate('/problems'), 1500);
   };
 
   return (
@@ -118,8 +97,7 @@ export default function AddProblem() {
       <div className="container">
         <div className={styles.breadcrumb}>
           <Link to="/problems" className={styles.backLink}><ArrowLeft size={15} /> Problems</Link>
-          <span>›</span>
-          <span>{isEdit ? 'Edit Problem' : 'Add Problem'}</span>
+          <span>›</span><span>{isEdit ? 'Edit Problem' : 'Add Problem'}</span>
         </div>
 
         <div className={styles.header}>
@@ -137,26 +115,23 @@ export default function AddProblem() {
           </div>
         </div>
 
-        {saved ? (
+        {saved && (
           <div className={styles.savedBanner}>
             <CheckCircle size={20} />
             <span>{isEdit ? 'Changes saved!' : 'Problem added!'} Redirecting…</span>
           </div>
-        ) : null}
-
+        )}
         {error && <div className={styles.errorBanner}>⚠️ {error}</div>}
 
         {tab === 'edit' ? (
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
-              {/* Meta sidebar */}
               <div className={styles.metaCol}>
                 <div className={styles.metaColTitle}>Problem Details</div>
 
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>Title</label>
-                  <input className={styles.input} value={form.title} onChange={e => set('title', e.target.value)}
-                    placeholder="e.g., Measuring Speed of Sound" required />
+                  <input className={styles.input} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g., Measuring Speed of Sound" required />
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -171,18 +146,15 @@ export default function AddProblem() {
                 <div className={styles.row2}>
                   <div className={styles.fieldGroup}>
                     <label className={styles.label}>Year</label>
-                    <input type="number" className={styles.input} value={form.year}
-                      onChange={e => set('year', Number(e.target.value))} min={2010} max={2030} required />
+                    <input type="number" className={styles.input} value={form.year} onChange={e => set('year', Number(e.target.value))} min={2010} max={2030} required />
                   </div>
                   <div className={styles.fieldGroup}>
                     <label className={styles.label}>Grade</label>
                     <select className={styles.select} value={String(form.gradeLevel)}
                       onChange={e => set('gradeLevel', e.target.value === 'null' ? null : Number(e.target.value) as GradeLevel)}>
                       <option value="null">N/A</option>
-                      <option value="8">8</option>
-                      <option value="9">9</option>
-                      <option value="10">10</option>
-                      <option value="11">11</option>
+                      <option value="8">8</option><option value="9">9</option>
+                      <option value="10">10</option><option value="11">11</option>
                     </select>
                   </div>
                 </div>
@@ -202,12 +174,10 @@ export default function AddProblem() {
 
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>Tags (comma-separated)</label>
-                  <input className={styles.input} value={form.tags} onChange={e => set('tags', e.target.value)}
-                    placeholder="optics, waves, measurement" />
+                  <input className={styles.input} value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="optics, waves, measurement" />
                 </div>
               </div>
 
-              {/* Content editors */}
               <div className={styles.contentCol}>
                 <LatexEditor label="Problem Statement" value={form.statement} onChange={v => set('statement', v)} rows={5} />
                 <div style={{ height: '1.5rem' }} />

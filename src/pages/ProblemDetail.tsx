@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FlaskConical, ChevronDown, ChevronUp, Edit2, Trash2, Printer, Share2, AlertCircle } from 'lucide-react';
 import { useProblem, useProblems } from '../hooks/useProblems';
-import { deleteProblem } from '../lib/supabase';
 import Badge from '../components/ui/Badge';
 import LatexRenderer from '../components/ui/LatexRenderer';
 import ScrollToTop from '../components/ui/ScrollToTop';
@@ -13,33 +12,20 @@ function SkeletonDetail() {
   return (
     <div className={styles.page}>
       <div className="container">
-        <div className={styles.breadcrumb} style={{ opacity: 0.4 }}>
-          <span>← All Problems</span>
-        </div>
         <div className={styles.layout}>
           <div className={styles.main}>
-            <div className={styles.articleHero} style={{ minHeight: 200 }}>
+            <div className={styles.articleHero} style={{ minHeight: 180 }}>
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                {[80, 60, 70, 65].map((w, i) => (
-                  <div key={i} style={{ height: 20, width: `${w}px`, borderRadius: 100, background: 'var(--bg-elevated)', animation: 'shimmerMove 1.4s ease infinite' }} />
+                {[80, 60, 70].map((w, i) => (
+                  <div key={i} style={{ height: 20, width: w, borderRadius: 100, background: 'var(--bg-elevated)' }} />
                 ))}
               </div>
-              <div style={{ height: 32, width: '70%', borderRadius: 8, background: 'var(--bg-elevated)', marginBottom: '0.75rem', animation: 'shimmerMove 1.4s ease infinite' }} />
-              <div style={{ height: 32, width: '45%', borderRadius: 8, background: 'var(--bg-elevated)', animation: 'shimmerMove 1.4s ease infinite' }} />
+              <div style={{ height: 28, width: '70%', borderRadius: 8, background: 'var(--bg-elevated)', marginBottom: '0.5rem' }} />
+              <div style={{ height: 28, width: '45%', borderRadius: 8, background: 'var(--bg-elevated)' }} />
             </div>
-            {[100, 80, 90].map((w, i) => (
-              <div key={i} className={styles.block}>
-                <div className={styles.blockLabel} />
-                <div className={styles.blockContent}>
-                  {[100, w, 70].map((lw, j) => (
-                    <div key={j} style={{ height: 14, width: `${lw}%`, borderRadius: 6, background: 'var(--bg-elevated)', marginBottom: '0.5rem', animation: 'shimmerMove 1.4s ease infinite' }} />
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
           <div className={styles.sidebar}>
-            <div className={styles.sideCard} style={{ minHeight: 200 }} />
+            <div className={styles.sideCard} style={{ minHeight: 180 }} />
           </div>
         </div>
       </div>
@@ -53,9 +39,7 @@ function ProblemNotFound() {
     <div className={styles.notFoundPage}>
       <div className={styles.notFoundBlob} />
       <div className={styles.notFoundInner}>
-        <div className={styles.notFoundIcon}>
-          <AlertCircle size={28} />
-        </div>
+        <div className={styles.notFoundIcon}><AlertCircle size={28} /></div>
         <h2>Problem Not Found</h2>
         <p>This problem doesn't exist or may have been removed.</p>
         <div className={styles.notFoundActions}>
@@ -94,9 +78,10 @@ export default function ProblemDetail() {
     if (!problem || !confirm('Delete this problem permanently?')) return;
     setDeleting(true);
     try {
+      const { deleteProblem } = await import('../lib/supabase');
       await deleteProblem(problem.id);
-    } catch {
-      // mock mode — just navigate
+    } catch (_e) {
+      // mock mode
     }
     navigate('/problems');
   };
@@ -104,17 +89,13 @@ export default function ProblemDetail() {
   if (loading) return <SkeletonDetail />;
   if (!problem) return <ProblemNotFound />;
 
-  const related = problems
-    .filter(p => p.olympiad === problem.olympiad && p.id !== problem.id)
-    .slice(0, 3);
+  const related = problems.filter(p => p.olympiad === problem.olympiad && p.id !== problem.id).slice(0, 3);
 
   return (
-    <div className={styles.page} id="print-area">
+    <div className={styles.page}>
       <div className="container">
         <div className={styles.breadcrumb}>
-          <Link to="/problems" className={styles.backLink}>
-            <ArrowLeft size={15} /> All Problems
-          </Link>
+          <Link to="/problems" className={styles.backLink}><ArrowLeft size={15} /> All Problems</Link>
           <span>›</span>
           <span className={styles.breadCrumb}>{problem.olympiad} {problem.year}</span>
         </div>
@@ -147,11 +128,7 @@ export default function ProblemDetail() {
                     <Link to={`/edit/${problem.id}`} className={`${styles.toolBtn} ${styles.toolBtnEdit}`}>
                       <Edit2 size={14} /> Edit
                     </Link>
-                    <button
-                      className={`${styles.toolBtn} ${styles.toolBtnDelete}`}
-                      onClick={handleDelete}
-                      disabled={deleting}
-                    >
+                    <button className={`${styles.toolBtn} ${styles.toolBtnDelete}`} onClick={handleDelete} disabled={deleting}>
                       <Trash2 size={14} /> {deleting ? 'Deleting…' : 'Delete'}
                     </button>
                   </>
@@ -161,18 +138,14 @@ export default function ProblemDetail() {
 
             <div className={styles.block}>
               <div className={styles.blockLabel}>
-                <span className={`${styles.labelDot} ${styles.dotBlue}`} />
-                Problem Statement
+                <span className={`${styles.labelDot} ${styles.dotBlue}`} />Problem Statement
               </div>
-              <div className={styles.blockContent}>
-                <LatexRenderer>{problem.statement}</LatexRenderer>
-              </div>
+              <div className={styles.blockContent}><LatexRenderer>{problem.statement}</LatexRenderer></div>
             </div>
 
             <div className={styles.block}>
               <div className={styles.blockLabel}>
-                <span className={`${styles.labelDot} ${styles.dotGreen}`} />
-                Experimental Setup
+                <span className={`${styles.labelDot} ${styles.dotGreen}`} />Experimental Setup
               </div>
               <div className={`${styles.blockContent} ${styles.setupBox}`}>
                 <FlaskConical size={18} className={styles.setupIcon} />
@@ -186,8 +159,7 @@ export default function ProblemDetail() {
                 onClick={() => setSolutionOpen(v => !v)}
               >
                 <div className={styles.toggleLeft}>
-                  <span className={`${styles.labelDot} ${styles.dotGold}`} />
-                  <span>Full Solution</span>
+                  <span className={`${styles.labelDot} ${styles.dotGold}`} /><span>Full Solution</span>
                 </div>
                 <div className={styles.toggleRight}>
                   <span>{solutionOpen ? 'Hide Solution' : 'Reveal Solution'}</span>
@@ -195,9 +167,7 @@ export default function ProblemDetail() {
                 </div>
               </button>
               <div className={`${styles.solutionBody} ${solutionOpen ? styles.solutionBodyOpen : ''}`}>
-                <div className={styles.solutionInner}>
-                  <LatexRenderer>{problem.solution}</LatexRenderer>
-                </div>
+                <div className={styles.solutionInner}><LatexRenderer>{problem.solution}</LatexRenderer></div>
               </div>
             </div>
           </article>
@@ -218,7 +188,6 @@ export default function ProblemDetail() {
                 )}
               </dl>
             </div>
-
             {related.length > 0 && (
               <div className={styles.sideCard}>
                 <div className={styles.sideTitle}>More from {problem.olympiad}</div>
@@ -227,9 +196,7 @@ export default function ProblemDetail() {
                     <Link key={p.id} to={`/problems/${p.id}`} className={styles.relatedItem}>
                       <div>
                         <div className={styles.relatedName}>{p.title}</div>
-                        <div className={styles.relatedMeta}>
-                          {p.year} · <Badge type="difficulty" value={p.difficulty} />
-                        </div>
+                        <div className={styles.relatedMeta}>{p.year} · <Badge type="difficulty" value={p.difficulty} /></div>
                       </div>
                       <ArrowLeft size={14} style={{ transform: 'rotate(180deg)', flexShrink: 0, color: 'var(--text-muted)' }} />
                     </Link>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@supabase/supabase-js';
 import { Problem } from '../types';
 
@@ -11,7 +12,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
 export async function fetchProblems(): Promise<Problem[]> {
   const { data, error } = await supabase.from('problems').select('*').order('created_at', { ascending: false });
   if (error) throw error;
-  return (data || []).map(dbToApp);
+  return (data ?? []).map(dbToApp);
 }
 
 export async function fetchProblemById(id: string): Promise<Problem | null> {
@@ -37,7 +38,6 @@ export async function deleteProblem(id: string): Promise<void> {
   if (error) throw error;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function dbToApp(row: any): Problem {
   return {
     id: String(row.id),
@@ -49,7 +49,7 @@ function dbToApp(row: any): Problem {
     statement: row.statement,
     experimentalSetup: row.experimental_setup,
     solution: row.solution,
-    tags: row.tags || [],
+    tags: row.tags ?? [],
   };
 }
 
@@ -63,6 +63,6 @@ function appToDB(p: Omit<Problem, 'id'>) {
     statement: p.statement,
     experimental_setup: p.experimentalSetup,
     solution: p.solution,
-    tags: p.tags || [],
+    tags: p.tags ?? [],
   };
 }
