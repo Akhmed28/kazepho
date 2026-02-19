@@ -354,3 +354,77 @@
     grid-template-columns: 1fr;
   }
 }
+
+.metaColTitle {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 0.25rem;
+}
+
+.diffPills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.diffPill {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--transition), transform var(--transition);
+}
+.diffPill:hover { opacity: 0.8; transform: scale(1.05); }
+.diffPillActiveEasy, .diffPillActiveMedium, .diffPillActiveHard { opacity: 1 !important; transform: scale(1.05); }
+
+.savedBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(62,217,138,0.08);
+  border: 1px solid rgba(62,217,138,0.25);
+  border-radius: var(--radius-lg);
+  color: var(--easy);
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.errorBanner {
+  padding: 0.85rem 1.25rem;
+  background: rgba(244,113,74,0.08);
+  border: 1px solid rgba(244,113,74,0.25);
+  border-radius: var(--radius-lg);
+  color: var(--hard);
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(8,13,26,0.3);
+  border-top-color: var(--bg-base);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.unauthIcon { font-size: 3rem; margin-bottom: 0.5rem; }
+.unauthorized { padding: 5rem 0; text-align: center; }
+.unauthorized h2 { margin-bottom: 0.5rem; }
+.unauthorized p { color: var(--text-muted); margin-bottom: 1.5rem; }
+.loginLink {
+  display: inline-block;
+  padding: 0.65rem 1.75rem;
+  background: var(--gold);
+  color: var(--bg-base);
+  border-radius: 100px;
+  font-family: 'Source Serif 4', serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background var(--transition);
+}
+.loginLink:hover { background: var(--gold-light); color: var(--bg-base); }

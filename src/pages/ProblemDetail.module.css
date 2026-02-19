@@ -303,3 +303,88 @@
   .title { font-size: 1.5rem; }
   .articleHero { padding: 1.25rem; }
 }
+
+/* ── NOT FOUND ── */
+.notFoundPage {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.notFoundBlob {
+  position: absolute;
+  width: 350px; height: 350px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(244,113,74,0.05) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.notFoundInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative;
+  z-index: 1;
+  max-width: 400px;
+}
+
+.notFoundIcon {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: rgba(244,113,74,0.1);
+  border: 1px solid rgba(244,113,74,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hard);
+  margin-bottom: 0.5rem;
+}
+
+.notFoundInner h2 { font-size: 1.6rem; }
+.notFoundInner p { color: var(--text-muted); font-size: 0.92rem; }
+
+.notFoundActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.nfBtnPrimary {
+  padding: 0.6rem 1.5rem;
+  background: var(--gold);
+  color: var(--bg-base);
+  border-radius: 100px;
+  font-family: 'Source Serif 4', serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+.nfBtnPrimary:hover { background: var(--gold-light); color: var(--bg-base); transform: translateY(-2px); }
+
+.nfBtnGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-family: 'Source Serif 4', serif;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.nfBtnGhost:hover { border-color: var(--border-strong); color: var(--text-primary); }

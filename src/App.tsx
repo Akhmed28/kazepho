@@ -6,6 +6,7 @@ import Problems from './pages/Problems';
 import ProblemDetail from './pages/ProblemDetail';
 import AddProblem from './pages/AddProblem';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/add" element={<AddProblem />} />
             <Route path="/edit/:id" element={<AddProblem />} />
             <Route path="/login" element={<Login />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>
