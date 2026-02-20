@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Problems from './pages/Problems';
 import ProblemDetail from './pages/ProblemDetail';
 import AddProblem from './pages/AddProblem';
+import About from './pages/About';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/problems/:id" element={<ProblemDetail />} />
             <Route path="/add" element={<AddProblem />} />
             <Route path="/edit/:id" element={<AddProblem />} />
+            <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
             <Route path="*" element={<NotFound />} />
           </Route>
