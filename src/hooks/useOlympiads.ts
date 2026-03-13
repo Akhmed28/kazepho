@@ -1,51 +1,79 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 
 const DEFAULT_OLYMPIADS = ['KazEPhO', 'Respa', 'IZhO'];
-const STORAGE_KEY = 'kazepho_olympiads';
-
-function loadOlympiads(): string[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored) as string[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    // ignore
-  }
-  return DEFAULT_OLYMPIADS;
-}
-
-function saveOlympiads(list: string[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
-}
 
 export function useOlympiads() {
-  const [olympiads, setOlympiads] = useState<string[]>(loadOlympiads);
+  const [olympiads, setOlympiads] = useState<string[]>(DEFAULT_OLYMPIADS);
+  const [loading, setLoading] = useState(true);
 
-  const addOlympiad = useCallback((name: string) => {
+  // Fetch from Supabase on mount
+  useEffect(() => {
+    async function fetchOlympiads() {
+      try {
+        const { data, error } = await supabase
+          .from('olympiads')
+          .select('name')
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        const names = (data ?? []).map((row: { name: string }) => row.name);
+
+        // Defaults first, then any extras alphabetically
+        const extras = names.filter((n) => !DEFAULT_OLYMPIADS.includes(n));
+        setOlympiads([...DEFAULT_OLYMPIADS, ...extras]);
+      } catch {
+        // Fallback to defaults if table doesn't exist yet
+        setOlympiads(DEFAULT_OLYMPIADS);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchOlympiads();
+  }, []);
+
+  const addOlympiad = useCallback(async (name: string): Promise<boolean> => {
     const trimmed = name.trim();
     if (!trimmed) return false;
-    setOlympiads(prev => {
-      if (prev.some(o => o.toLowerCase() === trimmed.toLowerCase())) return prev;
-      const next = [...prev, trimmed];
-      saveOlympiads(next);
-      return next;
+
+    // Optimistic UI update
+    setOlympiads((prev) => {
+      if (prev.some((o) => o.toLowerCase() === trimmed.toLowerCase())) return prev;
+      return [...prev, trimmed];
     });
-    return true;
+
+    try {
+      const { error } = await supabase
+        .from('olympiads')
+        .insert([{ name: trimmed }]);
+
+      if (error && error.code !== '23505') {
+        // Revert on real error (23505 = duplicate key, which is fine)
+        setOlympiads((prev) => prev.filter((o) => o !== trimmed));
+        return false;
+      }
+      return true;
+    } catch {
+      setOlympiads((prev) => prev.filter((o) => o !== trimmed));
+      return false;
+    }
   }, []);
 
-  const removeOlympiad = useCallback((name: string) => {
-    setOlympiads(prev => {
-      const next = prev.filter(o => o !== name);
-      saveOlympiads(next);
-      return next;
-    });
+  const removeOlympiad = useCallback(async (name: string) => {
+    if (DEFAULT_OLYMPIADS.includes(name)) return;
+
+    // Optimistic UI update
+    setOlympiads((prev) => prev.filter((o) => o !== name));
+
+    try {
+      await supabase.from('olympiads').delete().eq('name', name);
+    } catch {
+      // Revert on failure
+      setOlympiads((prev) => [...prev, name]);
+    }
   }, []);
 
-  return { olympiads, addOlympiad, removeOlympiad };
+  return { olympiads, loading, addOlympiad, removeOlympiad };
 }

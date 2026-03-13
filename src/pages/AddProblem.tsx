@@ -141,10 +141,10 @@ export default function AddProblem() {
     setTimeout(() => navigate('/problems'), 1500);
   };
 
-  const handleAddOlympiad = () => {
+  const handleAddOlympiad = async () => {
     const trimmed = newOlympiadName.trim();
     if (!trimmed) { setAddOlympiadError(t('nav_problems')); return; }
-    const ok = addOlympiad(trimmed);
+    const ok = await addOlympiad(trimmed);
     if (!ok) { setAddOlympiadError('Already exists.'); return; }
     set('olympiad', trimmed as Olympiad);
     setNewOlympiadName(''); setAddOlympiadError(''); setShowAddOlympiad(false);
