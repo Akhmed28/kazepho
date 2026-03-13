@@ -6,6 +6,13 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
 export type Language = 'en' | 'ru' | 'kz';
 
+export interface LangContent {
+  title: string;
+  statement: string;
+  experimentalSetup: string;
+  solution: string;
+}
+
 export interface Problem {
   id: string;
   title: string;
@@ -19,7 +26,7 @@ export interface Problem {
   tags?: string[];
   pdfData?: string;
   pdfName?: string;
-  language?: Language;
+  translations?: Partial<Record<Language, LangContent>>;
 }
 
 export interface User {

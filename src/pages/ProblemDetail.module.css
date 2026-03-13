@@ -418,3 +418,35 @@
 .pdfSideBtn:hover {
   background: rgba(62, 217, 138, 0.14);
 }
+
+/* ── Language Switcher ── */
+.langSwitcher {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.langBtn {
+  padding: 0.35rem 0.9rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-family: 'Source Serif 4', serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.langBtn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.langBtnActive {
+  border-color: var(--gold) !important;
+  background: var(--gold-glow) !important;
+  color: var(--gold) !important;
+  font-weight: 600;
+}

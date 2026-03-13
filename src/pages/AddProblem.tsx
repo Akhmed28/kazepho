@@ -8,29 +8,31 @@ import { useOlympiads } from '../hooks/useOlympiads';
 import LatexEditor from '../components/editor/LatexEditor';
 import LatexRenderer from '../components/ui/LatexRenderer';
 import Badge from '../components/ui/Badge';
-import { Olympiad, GradeLevel, Difficulty, Language } from '../types';
+import { Olympiad, GradeLevel, Difficulty, Language, LangContent } from '../types';
 import styles from './AddProblem.module.css';
 
-interface FormData {
-  title: string;
-  olympiad: Olympiad;
-  year: number;
-  gradeLevel: GradeLevel;
-  difficulty: Difficulty;
-  language: Language;
-  statement: string;
-  experimentalSetup: string;
-  solution: string;
-  tags: string;
-  pdfData: string;
-  pdfName: string;
-}
-
-const PROBLEM_LANGS: { code: Language; label: string }[] = [
+const LANGS: { code: Language; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'ru', label: 'Русский' },
   { code: 'kz', label: 'Қазақша' },
 ];
+
+const EMPTY_CONTENT: LangContent = {
+  title: '',
+  statement: '',
+  experimentalSetup: '',
+  solution: '',
+};
+
+interface MetaData {
+  olympiad: Olympiad;
+  year: number;
+  gradeLevel: GradeLevel;
+  difficulty: Difficulty;
+  tags: string;
+  pdfData: string;
+  pdfName: string;
+}
 
 export default function AddProblem() {
   const { id } = useParams<{ id?: string }>();
@@ -41,13 +43,22 @@ export default function AddProblem() {
   const { problem: existing } = useProblem(id);
   const { olympiads, addOlympiad, removeOlympiad } = useOlympiads();
 
-  const [form, setForm] = useState<FormData>({
-    title: '', olympiad: 'KazEPhO', year: new Date().getFullYear(),
-    gradeLevel: null, difficulty: 'Medium', language: 'en',
-    statement: '', experimentalSetup: '', solution: '', tags: '',
-    pdfData: '', pdfName: '',
+  const [meta, setMeta] = useState<MetaData>({
+    olympiad: 'KazEPhO',
+    year: new Date().getFullYear(),
+    gradeLevel: null,
+    difficulty: 'Medium',
+    tags: '',
+    pdfData: '',
+    pdfName: '',
   });
 
+  // Per-language content: { en: {...}, ru: {...}, kz: {...} }
+  const [translations, setTranslations] = useState<Partial<Record<Language, LangContent>>>({
+    en: { ...EMPTY_CONTENT },
+  });
+
+  const [activeLang, setActiveLang] = useState<Language>('en');
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -63,16 +74,30 @@ export default function AddProblem() {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [pdfUploading, setPdfUploading] = useState(false);
 
+  // Load existing problem data when editing
   useEffect(() => {
     if (existing) {
-      setForm({
-        title: existing.title, olympiad: existing.olympiad, year: existing.year,
-        gradeLevel: existing.gradeLevel, difficulty: existing.difficulty,
-        language: (existing.language as Language) ?? 'en',
-        statement: existing.statement, experimentalSetup: existing.experimentalSetup,
-        solution: existing.solution, tags: (existing.tags ?? []).join(', '),
-        pdfData: existing.pdfData ?? '', pdfName: existing.pdfName ?? '',
+      setMeta({
+        olympiad: existing.olympiad,
+        year: existing.year,
+        gradeLevel: existing.gradeLevel,
+        difficulty: existing.difficulty,
+        tags: (existing.tags ?? []).join(', '),
+        pdfData: existing.pdfData ?? '',
+        pdfName: existing.pdfName ?? '',
       });
+
+      // Load translations, falling back to top-level fields for EN
+      const existingTranslations: Partial<Record<Language, LangContent>> = {
+        en: {
+          title: existing.title,
+          statement: existing.statement,
+          experimentalSetup: existing.experimentalSetup,
+          solution: existing.solution,
+        },
+        ...(existing.translations ?? {}),
+      };
+      setTranslations(existingTranslations);
     }
   }, [existing]);
 
@@ -81,8 +106,8 @@ export default function AddProblem() {
   }, [showAddOlympiad]);
 
   useEffect(() => {
-    if (!olympiads.includes(form.olympiad) && olympiads.length > 0)
-      setForm(f => ({ ...f, olympiad: olympiads[0] }));
+    if (!olympiads.includes(meta.olympiad) && olympiads.length > 0)
+      setMeta(m => ({ ...m, olympiad: olympiads[0] }));
   }, [olympiads]);
 
   if (!isAuthenticated) {
@@ -98,7 +123,17 @@ export default function AddProblem() {
     );
   }
 
-  const set = <K extends keyof FormData>(k: K, v: FormData[K]) => setForm(f => ({ ...f, [k]: v }));
+  const setMetaField = <K extends keyof MetaData>(k: K, v: MetaData[K]) =>
+    setMeta(m => ({ ...m, [k]: v }));
+
+  const setLangContent = (lang: Language, field: keyof LangContent, value: string) => {
+    setTranslations(prev => ({
+      ...prev,
+      [lang]: { ...(prev[lang] ?? EMPTY_CONTENT), [field]: value },
+    }));
+  };
+
+  const currentContent = translations[activeLang] ?? EMPTY_CONTENT;
 
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,7 +142,7 @@ export default function AddProblem() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      setForm(f => ({ ...f, pdfData: dataUrl, pdfName: file.name }));
+      setMeta(m => ({ ...m, pdfData: dataUrl, pdfName: file.name }));
       setPdfUploading(false);
     };
     reader.readAsDataURL(file);
@@ -118,15 +153,25 @@ export default function AddProblem() {
     e.preventDefault();
     setSaving(true);
     setError(null);
+
+    // EN content is the primary/top-level content
+    const enContent = translations.en ?? EMPTY_CONTENT;
+
     const payload = {
-      title: form.title, olympiad: form.olympiad, year: form.year,
-      gradeLevel: form.gradeLevel, difficulty: form.difficulty,
-      language: form.language,
-      statement: form.statement, experimentalSetup: form.experimentalSetup,
-      solution: form.solution,
-      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-      pdfData: form.pdfData, pdfName: form.pdfName,
+      title: enContent.title,
+      olympiad: meta.olympiad,
+      year: meta.year,
+      gradeLevel: meta.gradeLevel,
+      difficulty: meta.difficulty,
+      statement: enContent.statement,
+      experimentalSetup: enContent.experimentalSetup,
+      solution: enContent.solution,
+      tags: meta.tags.split(',').map(t => t.trim()).filter(Boolean),
+      pdfData: meta.pdfData,
+      pdfName: meta.pdfName,
+      translations,
     };
+
     try {
       if (isEdit && id) {
         const { updateProblem } = await import('../lib/supabase');
@@ -146,7 +191,7 @@ export default function AddProblem() {
     if (!trimmed) { setAddOlympiadError(t('nav_problems')); return; }
     const ok = await addOlympiad(trimmed);
     if (!ok) { setAddOlympiadError('Already exists.'); return; }
-    set('olympiad', trimmed as Olympiad);
+    setMetaField('olympiad', trimmed as Olympiad);
     setNewOlympiadName(''); setAddOlympiadError(''); setShowAddOlympiad(false);
   };
 
@@ -189,14 +234,10 @@ export default function AddProblem() {
         {tab === 'edit' ? (
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
+
+              {/* ── LEFT: Metadata ── */}
               <div className={styles.metaCol}>
                 <div className={styles.metaColTitle}>{t('form_details')}</div>
-
-                {/* Title */}
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>{t('form_title_label')}</label>
-                  <input className={styles.input} value={form.title} onChange={e => set('title', e.target.value)} placeholder={t('form_title_placeholder')} required />
-                </div>
 
                 {/* Olympiad */}
                 <div className={styles.fieldGroup}>
@@ -226,7 +267,7 @@ export default function AddProblem() {
                     {olympiads.map(o => {
                       const isDefault = ['KazEPhO', 'Respa', 'IZhO'].includes(o);
                       return (
-                        <div key={o} className={`${styles.olympiadItem} ${form.olympiad === o ? styles.olympiadItemActive : ''}`} onClick={() => set('olympiad', o as Olympiad)}>
+                        <div key={o} className={`${styles.olympiadItem} ${meta.olympiad === o ? styles.olympiadItemActive : ''}`} onClick={() => setMetaField('olympiad', o as Olympiad)}>
                           <span className={styles.olympiadItemName}>{o}</span>
                           {!isDefault && (
                             <button type="button" className={styles.olympiadRemoveBtn}
@@ -244,12 +285,12 @@ export default function AddProblem() {
                 <div className={styles.row2}>
                   <div className={styles.fieldGroup}>
                     <label className={styles.label}>{t('form_year')}</label>
-                    <input type="number" className={styles.input} value={form.year} onChange={e => set('year', Number(e.target.value))} min={2010} max={2030} required />
+                    <input type="number" className={styles.input} value={meta.year} onChange={e => setMetaField('year', Number(e.target.value))} min={2010} max={2030} required />
                   </div>
                   <div className={styles.fieldGroup}>
                     <label className={styles.label}>{t('form_grade')}</label>
-                    <select className={styles.select} value={String(form.gradeLevel)}
-                      onChange={e => set('gradeLevel', e.target.value === 'null' ? null : Number(e.target.value) as GradeLevel)}>
+                    <select className={styles.select} value={String(meta.gradeLevel)}
+                      onChange={e => setMetaField('gradeLevel', e.target.value === 'null' ? null : Number(e.target.value) as GradeLevel)}>
                       <option value="null">{t('form_grade_na')}</option>
                       <option value="8">8</option><option value="9">9</option>
                       <option value="10">10</option><option value="11">11</option>
@@ -263,23 +304,9 @@ export default function AddProblem() {
                   <div className={styles.diffPills}>
                     {(['Easy', 'Medium', 'Hard'] as Difficulty[]).map(d => (
                       <button key={d} type="button"
-                        className={`${styles.diffPill} ${form.difficulty === d ? styles[`diffPillActive${d}`] : ''}`}
-                        onClick={() => set('difficulty', d)}>
+                        className={`${styles.diffPill} ${meta.difficulty === d ? styles[`diffPillActive${d}`] : ''}`}
+                        onClick={() => setMetaField('difficulty', d)}>
                         <Badge type="difficulty" value={d} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Problem Language */}
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>{t('form_language')}</label>
-                  <div className={styles.langPills}>
-                    {PROBLEM_LANGS.map(l => (
-                      <button key={l.code} type="button"
-                        className={`${styles.langPill} ${form.language === l.code ? styles.langPillActive : ''}`}
-                        onClick={() => set('language', l.code)}>
-                        {l.label}
                       </button>
                     ))}
                   </div>
@@ -288,19 +315,19 @@ export default function AddProblem() {
                 {/* Tags */}
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>{t('form_tags')}</label>
-                  <input className={styles.input} value={form.tags} onChange={e => set('tags', e.target.value)} placeholder={t('form_tags_placeholder')} />
+                  <input className={styles.input} value={meta.tags} onChange={e => setMetaField('tags', e.target.value)} placeholder={t('form_tags_placeholder')} />
                 </div>
 
                 {/* PDF Upload */}
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>{t('form_pdf')}</label>
                   <div className={styles.pdfHint}>{t('form_pdf_hint')}</div>
-                  {form.pdfData ? (
+                  {meta.pdfData ? (
                     <div className={styles.pdfUploaded}>
                       <FileText size={16} className={styles.pdfIcon} />
-                      <span className={styles.pdfName}>{form.pdfName}</span>
+                      <span className={styles.pdfName}>{meta.pdfName}</span>
                       <button type="button" className={styles.pdfRemoveBtn}
-                        onClick={() => setForm(f => ({ ...f, pdfData: '', pdfName: '' }))}>
+                        onClick={() => setMeta(m => ({ ...m, pdfData: '', pdfName: '' }))}>
                         <X size={12} /> {t('form_pdf_remove')}
                       </button>
                     </div>
@@ -313,15 +340,67 @@ export default function AddProblem() {
                   )}
                   <input ref={pdfInputRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={handlePdfUpload} />
                 </div>
-
               </div>
 
+              {/* ── RIGHT: Language-tabbed content ── */}
               <div className={styles.contentCol}>
-                <LatexEditor label={t('form_statement')} value={form.statement} onChange={v => set('statement', v)} rows={5} />
-                <div style={{ height: '1.5rem' }} />
-                <LatexEditor label={t('form_setup')} value={form.experimentalSetup} onChange={v => set('experimentalSetup', v)} rows={4} />
-                <div style={{ height: '1.5rem' }} />
-                <LatexEditor label={t('form_solution')} value={form.solution} onChange={v => set('solution', v)} rows={10} />
+
+                {/* Language tabs */}
+                <div className={styles.langTabsBar}>
+                  {LANGS.map(l => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      className={`${styles.langTab} ${activeLang === l.code ? styles.langTabActive : ''}`}
+                      onClick={() => setActiveLang(l.code)}
+                    >
+                      {l.label}
+                      {translations[l.code]?.title || translations[l.code]?.statement
+                        ? <span className={styles.langTabDot} />
+                        : null}
+                    </button>
+                  ))}
+                  <div className={styles.langTabHint}>
+                    Fill in content for each language separately
+                  </div>
+                </div>
+
+                {/* Content fields for active language */}
+                <div className={styles.langContentPanel}>
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.label}>{t('form_title_label')}</label>
+                    <input
+                      className={styles.input}
+                      value={currentContent.title}
+                      onChange={e => setLangContent(activeLang, 'title', e.target.value)}
+                      placeholder={t('form_title_placeholder')}
+                      required={activeLang === 'en'}
+                    />
+                  </div>
+
+                  <div style={{ height: '1.25rem' }} />
+
+                  <LatexEditor
+                    label={t('form_statement')}
+                    value={currentContent.statement}
+                    onChange={v => setLangContent(activeLang, 'statement', v)}
+                    rows={5}
+                  />
+                  <div style={{ height: '1.5rem' }} />
+                  <LatexEditor
+                    label={t('form_setup')}
+                    value={currentContent.experimentalSetup}
+                    onChange={v => setLangContent(activeLang, 'experimentalSetup', v)}
+                    rows={4}
+                  />
+                  <div style={{ height: '1.5rem' }} />
+                  <LatexEditor
+                    label={t('form_solution')}
+                    value={currentContent.solution}
+                    onChange={v => setLangContent(activeLang, 'solution', v)}
+                    rows={10}
+                  />
+                </div>
               </div>
             </div>
 
@@ -333,20 +412,30 @@ export default function AddProblem() {
             </div>
           </form>
         ) : (
+          // Preview uses active language content
           <div className={styles.previewContainer}>
             <div className={styles.previewHeader}>
               <div className={styles.previewBadges}>
-                <Badge type="olympiad" value={form.olympiad} />
-                <Badge type="year" value={form.year} />
-                {form.gradeLevel && <Badge type="grade" value={form.gradeLevel} />}
-                <Badge type="difficulty" value={form.difficulty} />
+                <Badge type="olympiad" value={meta.olympiad} />
+                <Badge type="year" value={meta.year} />
+                {meta.gradeLevel && <Badge type="grade" value={meta.gradeLevel} />}
+                <Badge type="difficulty" value={meta.difficulty} />
               </div>
-              <h1 className={styles.previewTitle}>{form.title || 'Untitled Problem'}</h1>
+              <div className={styles.langTabsBar} style={{ marginBottom: '1rem' }}>
+                {LANGS.map(l => (
+                  <button key={l.code} type="button"
+                    className={`${styles.langTab} ${activeLang === l.code ? styles.langTabActive : ''}`}
+                    onClick={() => setActiveLang(l.code)}>
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+              <h1 className={styles.previewTitle}>{currentContent.title || 'Untitled Problem'}</h1>
             </div>
             {[
-              { label: t('form_statement'), content: form.statement },
-              { label: t('form_setup'), content: form.experimentalSetup },
-              { label: t('form_solution'), content: form.solution },
+              { label: t('form_statement'), content: currentContent.statement },
+              { label: t('form_setup'), content: currentContent.experimentalSetup },
+              { label: t('form_solution'), content: currentContent.solution },
             ].map(s => (
               <div key={s.label} className={styles.previewSection}>
                 <div className={styles.previewLabel}>{s.label}</div>

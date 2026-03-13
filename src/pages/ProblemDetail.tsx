@@ -56,6 +56,7 @@ function ProblemNotFound() {
 }
 
 const LANG_LABELS: Record<string, string> = { en: 'English', ru: 'Русский', kz: 'Қазақша' };
+const LANG_ORDER = ['en', 'ru', 'kz'] as const;
 
 export default function ProblemDetail() {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +68,7 @@ export default function ProblemDetail() {
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeLang, setActiveLang] = useState<'en' | 'ru' | 'kz'>('en');
 
   const handlePrint = () => {
     // If a PDF was uploaded, download it directly
@@ -104,6 +106,22 @@ export default function ProblemDetail() {
   const related = problems.filter(p => p.olympiad === problem.olympiad && p.id !== problem.id).slice(0, 3);
   const hasPdf = Boolean(problem.pdfData);
 
+  // Figure out which languages have content
+  const availableLangs = LANG_ORDER.filter(lang => {
+    if (lang === 'en') return true; // EN always available (top-level fields)
+    const c = problem.translations?.[lang];
+    return c && (c.title || c.statement);
+  });
+
+  // Get content for active language, falling back to EN
+  const translations = problem.translations ?? {};
+  const enContent = { title: problem.title, statement: problem.statement, experimentalSetup: problem.experimentalSetup, solution: problem.solution };
+  const activeContent = translations[activeLang] ?? enContent;
+  const displayTitle = activeContent.title || problem.title;
+  const displayStatement = activeContent.statement || problem.statement;
+  const displaySetup = activeContent.experimentalSetup || problem.experimentalSetup;
+  const displaySolution = activeContent.solution || problem.solution;
+
   return (
     <div className={styles.page}>
       <div className="container">
@@ -123,7 +141,20 @@ export default function ProblemDetail() {
                 {problem.gradeLevel && <Badge type="grade" value={problem.gradeLevel} />}
                 <Badge type="difficulty" value={problem.difficulty} />
               </div>
-              <h1 className={styles.title}>{problem.title}</h1>
+              <h1 className={styles.title}>{displayTitle}</h1>
+              {availableLangs.length > 1 && (
+                <div className={styles.langSwitcher}>
+                  {availableLangs.map(lang => (
+                    <button
+                      key={lang}
+                      className={`${styles.langBtn} ${activeLang === lang ? styles.langBtnActive : ''}`}
+                      onClick={() => setActiveLang(lang)}
+                    >
+                      {LANG_LABELS[lang]}
+                    </button>
+                  ))}
+                </div>
+              )}
               {problem.tags && (
                 <div className={styles.tags}>
                   {problem.tags.map(t => <Badge key={t} type="tag" value={t} />)}
@@ -154,7 +185,7 @@ export default function ProblemDetail() {
               <div className={styles.blockLabel}>
                 <span className={`${styles.labelDot} ${styles.dotBlue}`} />{t('detail_statement')}
               </div>
-              <div className={styles.blockContent}><LatexRenderer>{problem.statement}</LatexRenderer></div>
+              <div className={styles.blockContent}><LatexRenderer>{displayStatement}</LatexRenderer></div>
             </div>
 
             <div className={styles.block}>
@@ -163,7 +194,7 @@ export default function ProblemDetail() {
               </div>
               <div className={`${styles.blockContent} ${styles.setupBox}`}>
                 <FlaskConical size={18} className={styles.setupIcon} />
-                <LatexRenderer>{problem.experimentalSetup}</LatexRenderer>
+                <LatexRenderer>{displaySetup}</LatexRenderer>
               </div>
             </div>
 
@@ -181,7 +212,7 @@ export default function ProblemDetail() {
                 </div>
               </button>
               <div className={`${styles.solutionBody} ${solutionOpen ? styles.solutionBodyOpen : ''}`}>
-                <div className={styles.solutionInner}><LatexRenderer>{problem.solution}</LatexRenderer></div>
+                <div className={styles.solutionInner}><LatexRenderer>{displaySolution}</LatexRenderer></div>
               </div>
             </div>
           </article>
