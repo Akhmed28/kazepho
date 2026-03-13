@@ -7,7 +7,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-const ADMIN_PASSWORD = 'kazepho2024';
+const ADMIN_PASSWORD = 'poiuytre2026';
 const STORAGE_KEY = 'kazepho_auth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
