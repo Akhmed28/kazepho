@@ -21,7 +21,7 @@ export function useOlympiads() {
         const names = (data ?? []).map((row: { name: string }) => row.name);
 
         // Defaults first, then any extras alphabetically
-        const extras = names.filter((n) => !DEFAULT_OLYMPIADS.includes(n));
+        const extras = names.filter((n: string) => !DEFAULT_OLYMPIADS.includes(n));
         setOlympiads([...DEFAULT_OLYMPIADS, ...extras]);
       } catch {
         // Fallback to defaults if table doesn't exist yet
