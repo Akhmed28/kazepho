@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Eye, Code2, ImagePlus, X } from 'lucide-react';
 import LatexRenderer from '../ui/LatexRenderer';
 import { useLanguage } from '../../context/LanguageContext';
@@ -15,16 +15,64 @@ interface Props {
 interface UploadedImage {
   name: string;
   dataUrl: string;
-  tag: string;
+}
+
+// Regex to match markdown image tags (including base64 data URLs)
+const IMAGE_TAG_REGEX = /!\[([^\]]*)\]\((data:image\/[^)]+|https?:\/\/[^)]+)\)/g;
+
+// Split a value string into plain text + images
+function parseValue(value: string): { text: string; images: UploadedImage[] } {
+  const images: UploadedImage[] = [];
+  const text = value.replace(IMAGE_TAG_REGEX, (_match, name, dataUrl) => {
+    images.push({ name, dataUrl });
+    return '';
+  }).replace(/\n{3,}/g, '\n\n').trim();
+  return { text, images };
+}
+
+// Combine plain text + images back into a single value string
+function buildValue(text: string, images: UploadedImage[]): string {
+  const imageTags = images.map(img => `![${img.name}](${img.dataUrl})`).join('\n');
+  if (!imageTags) return text;
+  if (!text) return imageTags;
+  return text + '\n' + imageTags;
 }
 
 export default function LatexEditor({ label, value, onChange, placeholder, rows = 6 }: Props) {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
-  const [images, setImages] = useState<UploadedImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Parse initial value into text + images
+  const [textContent, setTextContent] = useState(() => parseValue(value).text);
+  const [images, setImages] = useState<UploadedImage[]>(() => parseValue(value).images);
+
+  // When the parent value changes (e.g. loading an existing problem),
+  // re-parse it — but only if it differs from what we'd build ourselves
+  const lastBuiltValue = useRef(buildValue(textContent, images));
+  useEffect(() => {
+    if (value !== lastBuiltValue.current) {
+      const parsed = parseValue(value);
+      setTextContent(parsed.text);
+      setImages(parsed.images);
+      lastBuiltValue.current = value;
+    }
+  }, [value]);
+
+  // Whenever text or images change, push the combined value up to the parent
+  const pushChange = useCallback((newText: string, newImages: UploadedImage[]) => {
+    const combined = buildValue(newText, newImages);
+    lastBuiltValue.current = combined;
+    onChange(combined);
+  }, [onChange]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setTextContent(newText);
+    pushChange(newText, images);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -34,40 +82,24 @@ export default function LatexEditor({ label, value, onChange, placeholder, rows 
     const readers = files.map(file => new Promise<UploadedImage>((resolve) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        const tag = `![${file.name}](${dataUrl})`;
-        resolve({ name: file.name, dataUrl, tag });
+        resolve({ name: file.name, dataUrl: ev.target?.result as string });
       };
       reader.readAsDataURL(file);
     }));
 
     Promise.all(readers).then(newImages => {
-      setImages(prev => [...prev, ...newImages]);
-      const ta = textareaRef.current;
-      const insertText = newImages.map(img => img.tag).join('\n');
-      if (ta) {
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const before = value.slice(0, start);
-        const after = value.slice(end);
-        const newVal = before + (before && !before.endsWith('\n') ? '\n' : '') + insertText + (after && !after.startsWith('\n') ? '\n' : '') + after;
-        onChange(newVal);
-        setTimeout(() => {
-          const pos = before.length + insertText.length + (before && !before.endsWith('\n') ? 1 : 0);
-          ta.setSelectionRange(pos, pos);
-          ta.focus();
-        }, 0);
-      } else {
-        onChange(value + '\n' + insertText);
-      }
+      const updated = [...images, ...newImages];
+      setImages(updated);
+      pushChange(textContent, updated);
       setUploading(false);
     });
     e.target.value = '';
   };
 
-  const removeImage = (img: UploadedImage) => {
-    setImages(prev => prev.filter(i => i.tag !== img.tag));
-    onChange(value.replace(img.tag, '').replace(/\n\n+/g, '\n\n').trim());
+  const removeImage = (index: number) => {
+    const updated = images.filter((_, i) => i !== index);
+    setImages(updated);
+    pushChange(textContent, updated);
   };
 
   return (
@@ -113,14 +145,34 @@ export default function LatexEditor({ label, value, onChange, placeholder, rows 
       </div>
 
       {mode === 'edit' ? (
-        <textarea
-          ref={textareaRef}
-          className={styles.textarea}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder || 'Enter LaTeX-formatted text. Use $...$ for inline math and $$...$$ for display equations.'}
-          rows={rows}
-        />
+        <>
+          <textarea
+            ref={textareaRef}
+            className={styles.textarea}
+            value={textContent}
+            onChange={handleTextChange}
+            placeholder={placeholder || 'Enter LaTeX-formatted text. Use $...$ for inline math and $$...$$ for display equations.'}
+            rows={rows}
+          />
+          {images.length > 0 && (
+            <div className={styles.imageStrip}>
+              {images.map((img, i) => (
+                <div key={i} className={styles.imageThumbnailWrap}>
+                  <img src={img.dataUrl} alt={img.name} className={styles.imageThumbnail} />
+                  <button
+                    type="button"
+                    className={styles.imageThumbnailRemove}
+                    onClick={() => removeImage(i)}
+                    title="Remove image"
+                  >
+                    <X size={10} />
+                  </button>
+                  <span className={styles.imageThumbnailName}>{img.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <div className={styles.preview}>
           {value ? (
@@ -128,20 +180,6 @@ export default function LatexEditor({ label, value, onChange, placeholder, rows 
           ) : (
             <span className={styles.previewEmpty}>Nothing to preview yet…</span>
           )}
-        </div>
-      )}
-
-      {images.length > 0 && (
-        <div className={styles.imageStrip}>
-          {images.map(img => (
-            <div key={img.tag} className={styles.imageThumbnailWrap}>
-              <img src={img.dataUrl} alt={img.name} className={styles.imageThumbnail} />
-              <button type="button" className={styles.imageThumbnailRemove} onClick={() => removeImage(img)} title="Remove image">
-                <X size={10} />
-              </button>
-              <span className={styles.imageThumbnailName}>{img.name}</span>
-            </div>
-          ))}
         </div>
       )}
 
