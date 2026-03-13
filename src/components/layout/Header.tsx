@@ -41,7 +41,7 @@ export default function Header() {
         <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}>
           <NavLink to="/" end className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={() => setMenuOpen(false)}>{t('nav_home')}</NavLink>
           <NavLink to="/problems" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={() => setMenuOpen(false)}>{t('nav_problems')}</NavLink>
-          <NavLink to="/about" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={() => setMenuOpen(false)}>{t('nav_about')}</NavLink>
+
 
           {isAuthenticated && (
             <NavLink to="/add" className={({ isActive }) => `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`} onClick={() => setMenuOpen(false)}>
