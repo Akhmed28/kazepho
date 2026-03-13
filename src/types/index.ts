@@ -26,6 +26,7 @@ export interface Problem {
   tags?: string[];
   pdfData?: string;
   pdfName?: string;
+  language?: Language;
   translations?: Partial<Record<Language, LangContent>>;
 }
 

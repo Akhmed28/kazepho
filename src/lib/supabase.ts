@@ -66,6 +66,7 @@ function dbToApp(row: any): Problem {
     tags: row.tags ?? [],
     pdfData: row.pdf_data ?? '',
     pdfName: row.pdf_name ?? '',
+    language: row.language ?? 'en',
     translations,
   };
 }
