@@ -60,7 +60,6 @@ export default function Login() {
           </button>
         </form>
         <div className={styles.hint}>
-          <span>Demo password: </span><code>kazepho2024</code>
         </div>
         <Link to="/" className={styles.backLink}>{t('login_back')}</Link>
       </div>
