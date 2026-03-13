@@ -33,11 +33,17 @@ function renderLatex(text: string): string {
     }
   });
 
+  // Convert markdown images: ![alt](src)
+  result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, src) => {
+    return `<img src="${src}" alt="${alt}" style="max-width:100%;height:auto;display:block;margin:0.75rem 0;border-radius:6px;" />`;
+  });
+
   // Convert markdown-style bold
   result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
   // Convert newlines to <br> for rendering
   result = result.replace(/\n\n/g, '</p><p>');
+  result = result.replace(/\n/g, '<br>');
   result = `<p>${result}</p>`;
 
   return result;
@@ -50,7 +56,7 @@ export default function LatexRenderer({ children, className }: Props) {
     <div
       className={className}
       dangerouslySetInnerHTML={{ __html: html }}
-      style={{ lineHeight: 1.8 }}
+      style={{ lineHeight: 1.8, overflowWrap: 'break-word', wordBreak: 'break-word', minWidth: 0 }}
     />
   );
 }
