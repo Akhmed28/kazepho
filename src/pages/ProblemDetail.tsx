@@ -224,7 +224,7 @@ export default function ProblemDetail() {
                 <div className={styles.metaRow}><dt>{t('detail_olympiad')}</dt><dd><Badge type="olympiad" value={problem.olympiad} /></dd></div>
                 <div className={styles.metaRow}><dt>{t('detail_year')}</dt><dd>{problem.year}</dd></div>
                 <div className={styles.metaRow}><dt>{t('detail_difficulty')}</dt><dd><Badge type="difficulty" value={problem.difficulty} /></dd></div>
-                {problem.gradeLevel && <div className={styles.metaRow}><dt>{t('detail_grade')}</dt><dd>Grade {problem.gradeLevel}</dd></div>}
+                {problem.gradeLevel && <div className={styles.metaRow}><dt>{t('detail_grade')}</dt><dd>{t('grade_prefix')} {problem.gradeLevel}</dd></div>}
                 {problem.language && (
                   <div className={styles.metaRow}><dt>{t('detail_language')}</dt><dd>{LANG_LABELS[problem.language] ?? problem.language}</dd></div>
                 )}

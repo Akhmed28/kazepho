@@ -190,7 +190,7 @@ export default function AddProblem() {
     const trimmed = newOlympiadName.trim();
     if (!trimmed) { setAddOlympiadError(t('nav_problems')); return; }
     const ok = await addOlympiad(trimmed);
-    if (!ok) { setAddOlympiadError('Already exists.'); return; }
+    if (!ok) { setAddOlympiadError(t('form_already_exists')); return; }
     setMetaField('olympiad', trimmed as Olympiad);
     setNewOlympiadName(''); setAddOlympiadError(''); setShowAddOlympiad(false);
   };
@@ -214,10 +214,10 @@ export default function AddProblem() {
             <h1>{isEdit ? t('edit_title') : t('add_title')}</h1>
             <div className={styles.tabSwitch}>
               <button type="button" className={`${styles.tabBtn} ${tab === 'edit' ? styles.tabBtnActive : ''}`} onClick={() => setTab('edit')}>
-                <Code2 size={13} /> Edit
+                <Code2 size={13} /> {t('form_tab_edit')}
               </button>
               <button type="button" className={`${styles.tabBtn} ${tab === 'preview' ? styles.tabBtnActive : ''}`} onClick={() => setTab('preview')}>
-                <Eye size={13} /> Preview
+                <Eye size={13} /> {t('form_tab_preview')}
               </button>
             </div>
           </div>
@@ -361,7 +361,7 @@ export default function AddProblem() {
                     </button>
                   ))}
                   <div className={styles.langTabHint}>
-                    Fill in content for each language separately
+                    {t('form_lang_hint')}
                   </div>
                 </div>
 
@@ -430,7 +430,7 @@ export default function AddProblem() {
                   </button>
                 ))}
               </div>
-              <h1 className={styles.previewTitle}>{currentContent.title || 'Untitled Problem'}</h1>
+              <h1 className={styles.previewTitle}>{currentContent.title || t('form_untitled')}</h1>
             </div>
             {[
               { label: t('form_statement'), content: currentContent.statement },
@@ -439,11 +439,11 @@ export default function AddProblem() {
             ].map(s => (
               <div key={s.label} className={styles.previewSection}>
                 <div className={styles.previewLabel}>{s.label}</div>
-                {s.content ? <LatexRenderer>{s.content}</LatexRenderer> : <span className={styles.previewEmpty}>No content yet…</span>}
+                {s.content ? <LatexRenderer>{s.content}</LatexRenderer> : <span className={styles.previewEmpty}>{t('form_no_content')}</span>}
               </div>
             ))}
             <div className={styles.actions}>
-              <button type="button" className={styles.cancelBtn} onClick={() => setTab('edit')}>← Back to Editor</button>
+              <button type="button" className={styles.cancelBtn} onClick={() => setTab('edit')}>{t('form_back_editor')}</button>
             </div>
           </div>
         )}
